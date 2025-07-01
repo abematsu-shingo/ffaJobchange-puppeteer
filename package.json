@@ -1,0 +1,27 @@
+{
+    "name": "ffa-backend",
+    "version": "2.0.0",
+    "description": "FFA+ Charactor Status API",
+    "homepage": "https://github.com/abematsu-shingo/ffaJobchange-puppeteer#readme",
+    "bugs": {
+        "url": "https://github.com/abematsu-shingo/ffaJobchange-puppeteer/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/abematsu-shingo/ffaJobchange-puppeteer.git"
+    },
+    "license": "ISC",
+    "author": "",
+    "type": "commonjs",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js"
+    },
+    "dependencies": {
+        "cors": "^2.8.5",
+        "dotenv": "^17.0.0",
+        "express": "^5.1.0",
+        "puppeteer": "^24.11.1",
+        "typescript": "^5.8.3"
+    }
+}
