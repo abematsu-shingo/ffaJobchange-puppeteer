@@ -1,0 +1,11 @@
+{
+    "compilerOptions": {
+        "target": "es2022", // 出力するJSのECMAScriptのバージョン
+        "module": "commonjs", // 出力するモジュール形式（Node.jsではCommonJS）
+        "outDir": "./dist", // コンパルされたファイルの出力先ディレクトリ
+        "strict": true, // 厳格な型チェック有効
+        "esModuleInterop": true // CommonJSモジュールとESモジュールの相互運用を助ける
+    },
+    "include": ["src/**/*.ts"], // コンパイル対象のTSファイル
+    "exclude": ["node_modules"] // コンパイル対象から除外
+}
