@@ -59,25 +59,25 @@ app.post(
             );
 
             // 画像、css、fontのリソース読み込みをブロックして高速化
-            // await page.setRequestInterception(true);
-            // page.on(
-            //     "request",
-            //     (request: {
-            //         resourceType: () => string;
-            //         abort: () => void;
-            //         continue: () => void;
-            //     }) => {
-            //         if (
-            //             ["image", "stylesheet", "font"].includes(
-            //                 request.resourceType()
-            //             )
-            //         ) {
-            //             request.abort();
-            //         } else {
-            //             request.continue();
-            //         }
-            //     }
-            // );
+            await page.setRequestInterception(true);
+            page.on(
+                "request",
+                (request: {
+                    resourceType: () => string;
+                    abort: () => void;
+                    continue: () => void;
+                }) => {
+                    if (
+                        ["image", "stylesheet", "font"].includes(
+                            request.resourceType()
+                        )
+                    ) {
+                        request.abort();
+                    } else {
+                        request.continue();
+                    }
+                }
+            );
 
             // ユーザーIDを元にターゲットURLを構築
             const targetUrl = `http://s2.game-can.com:8080/ffa/kairan.cgi?mode=login&id=${characterId}`;
