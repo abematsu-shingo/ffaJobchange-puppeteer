@@ -9,9 +9,9 @@ interface CharacterStatus {
     luck: string;
 }
 
-const express = require("express");
-const puppeteer = require("puppeteer");
-const cors = require("cors"); // CORSミドルウェアをインポート
+import express from "express";
+import puppeteer from "puppeteer";
+import cors from "cors"; // CORSミドルウェアをインポート
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -27,128 +27,131 @@ app.use(
 app.use(express.json());
 
 // ステータス取得APIエンドポイント
-import { Request, Response } from "express";
 
-app.post("/api/get-status", async (req: Request, res: Response) => {
-    const { characterId } = req.body as { characterId: string }; // フロントエンドから送られてきたcharacterIdを取得
+app.post(
+    "/api/get-status",
+    async (req: express.Request, res: express.Response) => {
+        const { characterId } = req.body as { characterId: string }; // フロントエンドから送られてきたcharacterIdを取得
 
-    // IDが入力されていなかった場合
-    if (!characterId) {
-        return res
-            .status(400)
-            .json({ error: "キャラクターIDが指定されていません。" });
-    }
+        // IDが入力されていなかった場合
+        if (!characterId) {
+            res.status(400).json({
+                error: "キャラクターIDが指定されていません。",
+            });
+            return;
+        }
 
-    // ブラウザインスタンスを保持する変数
-    let browser;
+        // ブラウザインスタンスを保持する変数
+        let browser;
 
-    try {
-        // Puppeteerを起動
-        browser = await puppeteer.launch({
-            headless: true,
-            args: ["--no-sandbox", "--disable-setuid-sandbox"],
-        });
+        try {
+            // Puppeteerを起動
+            browser = await puppeteer.launch({
+                headless: true,
+                args: ["--no-sandbox", "--disable-setuid-sandbox"],
+            });
 
-        const page = await browser.newPage();
+            const page = await browser.newPage();
 
-        // 画像、css、fontのリソース読み込みをブロックして高速化
-        await page.setRequestInterception(true);
-        page.on(
-            "request",
-            (request: {
-                resourceType: () => string;
-                abort: () => void;
-                continue: () => void;
-            }) => {
-                if (
-                    ["image", "stylesheet", "font"].includes(
-                        request.resourceType()
-                    )
-                ) {
-                    request.abort();
-                } else {
-                    request.continue();
+            // 画像、css、fontのリソース読み込みをブロックして高速化
+            await page.setRequestInterception(true);
+            page.on(
+                "request",
+                (request: {
+                    resourceType: () => string;
+                    abort: () => void;
+                    continue: () => void;
+                }) => {
+                    if (
+                        ["image", "stylesheet", "font"].includes(
+                            request.resourceType()
+                        )
+                    ) {
+                        request.abort();
+                    } else {
+                        request.continue();
+                    }
                 }
+            );
+
+            // ユーザーIDを元にターゲットURLを構築
+            const targetUrl = `http://www.game-can.com/ffa/kairan.cgi?mode=login&id=${characterId}`;
+            console.log(`アクセスURL：${targetUrl}`);
+
+            // URLにアクセス
+            await page.goto(targetUrl, { waitUntil: "domcontentloaded" }); // DOMContentLoadedまで待機
+
+            // ソースコードの解析とデータ抽出ロジック
+            const characterStatus: CharacterStatus = await page.evaluate(() => {
+                // 現在のステータス値を入れるオブジェクト
+                const statusMap: CharacterStatus = {
+                    power: "",
+                    intelligence: "",
+                    faith: "",
+                    vitality: "",
+                    dexterity: "",
+                    speed: "",
+                    charm: "",
+                    luck: "",
+                };
+                // ステータス画面のソースコード
+                const src = document.body.innerHTML;
+                // ソースコードから余計なスペースをすべて削除
+                const newSrc = src.replace(/\s/g, "");
+
+                if (src && newSrc) {
+                    // ソースコードが取得できたら、現在のステータス値を抽出
+                    const currentPower = newSrc.match(/>力<.*?(\d+)/);
+                    const currentIntelligence = newSrc.match(/>知能<.*?(\d+)/);
+                    const currentFaith = newSrc.match(/>信仰心<.*?(\d+)/);
+                    const currentVitality = newSrc.match(/>生命力<.*?(\d+)/);
+                    const currentDexterity = newSrc.match(/>器用さ<.*?(\d+)/);
+                    const currentSpeed = newSrc.match(/>速さ<.*?(\d+)/);
+                    const currentCharm = newSrc.match(/>魅力<.*?(\d+)/);
+                    const currentLuck = newSrc.match(/>運<.*?(\d+)/);
+
+                    // 抽出したステータス値をオブジェクトに格納（nullチェック付き）
+                    statusMap.power =
+                        currentPower && currentPower[1] ? currentPower[1] : "";
+                    statusMap.intelligence =
+                        currentIntelligence && currentIntelligence[1]
+                            ? currentIntelligence[1]
+                            : "";
+                    statusMap.faith =
+                        currentFaith && currentFaith[1] ? currentFaith[1] : "";
+                    statusMap.vitality =
+                        currentVitality && currentVitality[1]
+                            ? currentVitality[1]
+                            : "";
+                    statusMap.dexterity =
+                        currentDexterity && currentDexterity[1]
+                            ? currentDexterity[1]
+                            : "";
+                    statusMap.speed =
+                        currentSpeed && currentSpeed[1] ? currentSpeed[1] : "";
+                    statusMap.charm =
+                        currentCharm && currentCharm[1] ? currentCharm[1] : "";
+                    statusMap.luck =
+                        currentLuck && currentLuck[1] ? currentLuck[1] : "";
+                }
+                // characterStatusにオブジェクトを返す
+                return statusMap;
+            });
+            // オブジェクトの中身をjsonデータでフロントエンドに渡す
+            res.json(characterStatus);
+        } catch (error) {
+            console.error("src取得中にエラーが発生しました。", error);
+            res.status(500).json({
+                error: "データ取得中にサーバーエラーが発生しました。",
+            });
+        } finally {
+            // ブラウザを閉じる
+            if (browser) {
+                await browser.close();
             }
-        );
-
-        // ユーザーIDを元にターゲットURLを構築
-        const targetUrl = `http://www.game-can.com/ffa/kairan.cgi?mode=login&id=${characterId}`;
-        console.log(`アクセスURL：${targetUrl}`);
-
-        // URLにアクセス
-        await page.goto(targetUrl, { waitUntil: "domcontentloaded" }); // DOMContentLoadedまで待機
-
-        // ソースコードの解析とデータ抽出ロジック
-        const characterStatus: CharacterStatus = await page.evaluate(() => {
-            // 現在のステータス値を入れるオブジェクト
-            const statusMap: CharacterStatus = {
-                power: "",
-                intelligence: "",
-                faith: "",
-                vitality: "",
-                dexterity: "",
-                speed: "",
-                charm: "",
-                luck: "",
-            };
-            // ステータス画面のソースコード
-            const src = document.body.innerHTML;
-            // ソースコードから余計なスペースをすべて削除
-            const newSrc = src.replace(/\s/g, "");
-
-            if (src && newSrc) {
-                // ソースコードが取得できたら、現在のステータス値を抽出
-                const currentPower = newSrc.match(/>力<.*?(\d+)/);
-                const currentIntelligence = newSrc.match(/>知能<.*?(\d+)/);
-                const currentFaith = newSrc.match(/>信仰心<.*?(\d+)/);
-                const currentVitality = newSrc.match(/>生命力<.*?(\d+)/);
-                const currentDexterity = newSrc.match(/>器用さ<.*?(\d+)/);
-                const currentSpeed = newSrc.match(/>速さ<.*?(\d+)/);
-                const currentCharm = newSrc.match(/>魅力<.*?(\d+)/);
-                const currentLuck = newSrc.match(/>運<.*?(\d+)/);
-
-                // 抽出したステータス値をオブジェクトに格納（nullチェック付き）
-                statusMap.power =
-                    currentPower && currentPower[1] ? currentPower[1] : "";
-                statusMap.intelligence =
-                    currentIntelligence && currentIntelligence[1]
-                        ? currentIntelligence[1]
-                        : "";
-                statusMap.faith =
-                    currentFaith && currentFaith[1] ? currentFaith[1] : "";
-                statusMap.vitality =
-                    currentVitality && currentVitality[1]
-                        ? currentVitality[1]
-                        : "";
-                statusMap.dexterity =
-                    currentDexterity && currentDexterity[1]
-                        ? currentDexterity[1]
-                        : "";
-                statusMap.speed =
-                    currentSpeed && currentSpeed[1] ? currentSpeed[1] : "";
-                statusMap.charm =
-                    currentCharm && currentCharm[1] ? currentCharm[1] : "";
-                statusMap.luck =
-                    currentLuck && currentLuck[1] ? currentLuck[1] : "";
-            }
-            // characterStatusにオブジェクトを返す
-            return statusMap;
-        });
-        // オブジェクトの中身をjsonデータでフロントエンドに渡す
-        res.json(characterStatus);
-    } catch (error) {
-        console.error("src取得中にエラーが発生しました。", error);
-        res.status(500).json({
-            error: "データ取得中にサーバーエラーが発生しました。",
-        });
-    } finally {
-        // ブラウザを閉じる
-        if (browser) {
-            await browser.close();
         }
     }
-});
+);
 
 // サーバー起動。第一引数にポート番号を指定することでサーバー起動。
 app.listen(port, () => {
