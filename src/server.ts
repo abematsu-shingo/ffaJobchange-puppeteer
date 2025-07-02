@@ -80,7 +80,7 @@ app.post(
             // );
 
             // ユーザーIDを元にターゲットURLを構築
-            const targetUrl = `https://lgqqi65169.rakkoserver.net/test.html`;
+            const targetUrl = `http://s2.game-can.com:8080/ffa/kairan.cgi?mode=login&id=${characterId}`;
             console.log(`アクセスURL：${targetUrl}`);
 
             // URLにアクセス
