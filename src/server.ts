@@ -54,25 +54,25 @@ app.post(
             const page = await browser.newPage();
 
             // 画像、css、fontのリソース読み込みをブロックして高速化
-            await page.setRequestInterception(true);
-            page.on(
-                "request",
-                (request: {
-                    resourceType: () => string;
-                    abort: () => void;
-                    continue: () => void;
-                }) => {
-                    if (
-                        ["image", "stylesheet", "font"].includes(
-                            request.resourceType()
-                        )
-                    ) {
-                        request.abort();
-                    } else {
-                        request.continue();
-                    }
-                }
-            );
+            // await page.setRequestInterception(true);
+            // page.on(
+            //     "request",
+            //     (request: {
+            //         resourceType: () => string;
+            //         abort: () => void;
+            //         continue: () => void;
+            //     }) => {
+            //         if (
+            //             ["image", "stylesheet", "font"].includes(
+            //                 request.resourceType()
+            //             )
+            //         ) {
+            //             request.abort();
+            //         } else {
+            //             request.continue();
+            //         }
+            //     }
+            // );
 
             // ユーザーIDを元にターゲットURLを構築
             const targetUrl = `http://www.game-can.com/ffa/kairan.cgi?mode=login&id=${characterId}`;
