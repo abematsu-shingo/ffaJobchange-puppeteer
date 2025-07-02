@@ -80,7 +80,7 @@ app.post(
             // );
 
             // ユーザーIDを元にターゲットURLを構築
-            const targetUrl = "https://lgqqi65169.rakkoserver.net/test.html";
+            const targetUrl = `https://lgqqi65169.rakkoserver.net/test.html`;
             console.log(`アクセスURL：${targetUrl}`);
 
             // URLにアクセス
