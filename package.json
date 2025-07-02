@@ -17,7 +17,8 @@
     "scripts": {
         "build": "tsc",
         "start": "node dist/server.js",
-        "serve": "npm run build && npm run start"
+        "serve": "npm run build && npm run start",
+        "postbuild": "npx puppeteer browsers install chrome"
     },
     "dependencies": {
         "cors": "^2.8.5",
