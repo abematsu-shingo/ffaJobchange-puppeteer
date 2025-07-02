@@ -14,21 +14,23 @@ const puppeteer = require("puppeteer");
 const cors = require("cors"); // CORSミドルウェアをインポート
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 // フロントエンドからのリクエスト許可
 app.use(
     cors({
         // 開発環境URL。デプロイ時は本番環境URLへ更新。
-        origin: "https/localhpst:5173",
+        origin: "http://localhost:5173/",
     })
 );
 // リクエストのJSONを扱いやすいデータに変更
 app.use(express.json());
 
 // ステータス取得APIエンドポイント
-app.post("/api/get-status", async (req, res) => {
-    const { characterId } = req.body; // フロントエンドから送られてきたcharacterIdを取得
+import { Request, Response } from "express";
+
+app.post("/api/get-status", async (req: Request, res: Response) => {
+    const { characterId } = req.body as { characterId: string }; // フロントエンドから送られてきたcharacterIdを取得
 
     // IDが入力されていなかった場合
     if (!characterId) {
@@ -51,18 +53,27 @@ app.post("/api/get-status", async (req, res) => {
 
         // 画像、css、fontのリソース読み込みをブロックして高速化
         await page.setRequestInterception(true);
-        page.on("request", (request) => {
-            if (
-                ["image", "stylesheet", "font"].includes(request.resourceType())
-            ) {
-                request.abort();
-            } else {
-                request.continue();
+        page.on(
+            "request",
+            (request: {
+                resourceType: () => string;
+                abort: () => void;
+                continue: () => void;
+            }) => {
+                if (
+                    ["image", "stylesheet", "font"].includes(
+                        request.resourceType()
+                    )
+                ) {
+                    request.abort();
+                } else {
+                    request.continue();
+                }
             }
-        });
+        );
 
         // ユーザーIDを元にターゲットURLを構築
-        const targetUrl = `http://www.game-can.com/ffa/kairan.cgi?mode=login&id=ketatuma`;
+        const targetUrl = `http://www.game-can.com/ffa/kairan.cgi?mode=login&id=${characterId}`;
         console.log(`アクセスURL：${targetUrl}`);
 
         // URLにアクセス
@@ -97,20 +108,49 @@ app.post("/api/get-status", async (req, res) => {
                 const currentCharm = newSrc.match(/>魅力<.*?(\d+)/);
                 const currentLuck = newSrc.match(/>運<.*?(\d+)/);
 
-                // 抽出したステータス値をオブジェクトに格納
-                statusMap.power = currentPower[1];
-                statusMap.intelligence = currentIntelligence[1];
-                statusMap.faith = currentFaith[1];
-                statusMap.vitality = currentVitality[1];
-                statusMap.dexterity = currentDexterity[1];
-                statusMap.speed = currentSpeed[1];
-                statusMap.charm = currentCharm[1];
-                statusMap.luck = currentLuck[1];
+                // 抽出したステータス値をオブジェクトに格納（nullチェック付き）
+                statusMap.power =
+                    currentPower && currentPower[1] ? currentPower[1] : "";
+                statusMap.intelligence =
+                    currentIntelligence && currentIntelligence[1]
+                        ? currentIntelligence[1]
+                        : "";
+                statusMap.faith =
+                    currentFaith && currentFaith[1] ? currentFaith[1] : "";
+                statusMap.vitality =
+                    currentVitality && currentVitality[1]
+                        ? currentVitality[1]
+                        : "";
+                statusMap.dexterity =
+                    currentDexterity && currentDexterity[1]
+                        ? currentDexterity[1]
+                        : "";
+                statusMap.speed =
+                    currentSpeed && currentSpeed[1] ? currentSpeed[1] : "";
+                statusMap.charm =
+                    currentCharm && currentCharm[1] ? currentCharm[1] : "";
+                statusMap.luck =
+                    currentLuck && currentLuck[1] ? currentLuck[1] : "";
             }
             // characterStatusにオブジェクトを返す
             return statusMap;
         });
         // オブジェクトの中身をjsonデータでフロントエンドに渡す
         res.json(characterStatus);
-    } catch {}
+    } catch (error) {
+        console.error("src取得中にエラーが発生しました。", error);
+        res.status(500).json({
+            error: "データ取得中にサーバーエラーが発生しました。",
+        });
+    } finally {
+        // ブラウザを閉じる
+        if (browser) {
+            await browser.close();
+        }
+    }
+});
+
+// サーバー起動。第一引数にポート番号を指定することでサーバー起動。
+app.listen(port, () => {
+    console.log(`バックエンドサーバーが${port}で起動しました。`);
 });
