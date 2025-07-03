@@ -159,7 +159,7 @@ app.post(
 
             if ("error" in characterStatus) {
                 res.status(404).json({
-                    error: "キャラクターIDを確認してください。",
+                    error: "たぶんキャラクターIDが誤っています。正しいIDを入力してください。",
                 });
                 return;
             }
