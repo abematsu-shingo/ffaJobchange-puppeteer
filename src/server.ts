@@ -87,61 +87,82 @@ app.post(
             await page.goto(targetUrl, { waitUntil: "domcontentloaded" }); // DOMContentLoadedまで待機
 
             // ソースコードの解析とデータ抽出ロジック
-            const characterStatus: CharacterStatus = await page.evaluate(() => {
-                // 現在のステータス値を入れるオブジェクト
-                const statusMap: CharacterStatus = {
-                    power: "",
-                    intelligence: "",
-                    faith: "",
-                    vitality: "",
-                    dexterity: "",
-                    speed: "",
-                    charm: "",
-                    luck: "",
-                };
-                // ステータス画面のソースコード
-                const src = document.body.innerHTML;
-                // ソースコードから余計なスペースをすべて削除
-                const newSrc = src.replace(/\s/g, "");
+            const characterStatus: CharacterStatus | { error: string } =
+                await page.evaluate(() => {
+                    // 現在のステータス値を入れるオブジェクト
+                    const statusMap: CharacterStatus = {
+                        power: "",
+                        intelligence: "",
+                        faith: "",
+                        vitality: "",
+                        dexterity: "",
+                        speed: "",
+                        charm: "",
+                        luck: "",
+                    };
+                    // ステータス画面のソースコード
+                    const src = document.body.innerHTML;
+                    // ソースコードから余計なスペースをすべて削除
+                    const newSrc = src.replace(/\s/g, "");
 
-                if (src && newSrc) {
-                    // ソースコードが取得できたら、現在のステータス値を抽出
-                    const currentPower = newSrc.match(/>力<.*?(\d+)/);
-                    const currentIntelligence = newSrc.match(/>知能<.*?(\d+)/);
-                    const currentFaith = newSrc.match(/>信仰心<.*?(\d+)/);
-                    const currentVitality = newSrc.match(/>生命力<.*?(\d+)/);
-                    const currentDexterity = newSrc.match(/>器用さ<.*?(\d+)/);
-                    const currentSpeed = newSrc.match(/>速さ<.*?(\d+)/);
-                    const currentCharm = newSrc.match(/>魅力<.*?(\d+)/);
-                    const currentLuck = newSrc.match(/>運<.*?(\d+)/);
+                    if (src.match(/ファイルを開けませんでした/)) {
+                        return { error: "NOT_FOUND" };
+                    } else if (src && newSrc) {
+                        // ソースコードが取得できたら、現在のステータス値を抽出
+                        const currentPower = newSrc.match(/>力<.*?(\d+)/);
+                        const currentIntelligence =
+                            newSrc.match(/>知能<.*?(\d+)/);
+                        const currentFaith = newSrc.match(/>信仰心<.*?(\d+)/);
+                        const currentVitality =
+                            newSrc.match(/>生命力<.*?(\d+)/);
+                        const currentDexterity =
+                            newSrc.match(/>器用さ<.*?(\d+)/);
+                        const currentSpeed = newSrc.match(/>速さ<.*?(\d+)/);
+                        const currentCharm = newSrc.match(/>魅力<.*?(\d+)/);
+                        const currentLuck = newSrc.match(/>運<.*?(\d+)/);
 
-                    // 抽出したステータス値をオブジェクトに格納（nullチェック付き）
-                    statusMap.power =
-                        currentPower && currentPower[1] ? currentPower[1] : "";
-                    statusMap.intelligence =
-                        currentIntelligence && currentIntelligence[1]
-                            ? currentIntelligence[1]
-                            : "";
-                    statusMap.faith =
-                        currentFaith && currentFaith[1] ? currentFaith[1] : "";
-                    statusMap.vitality =
-                        currentVitality && currentVitality[1]
-                            ? currentVitality[1]
-                            : "";
-                    statusMap.dexterity =
-                        currentDexterity && currentDexterity[1]
-                            ? currentDexterity[1]
-                            : "";
-                    statusMap.speed =
-                        currentSpeed && currentSpeed[1] ? currentSpeed[1] : "";
-                    statusMap.charm =
-                        currentCharm && currentCharm[1] ? currentCharm[1] : "";
-                    statusMap.luck =
-                        currentLuck && currentLuck[1] ? currentLuck[1] : "";
-                }
-                // characterStatusにオブジェクトを返す
-                return statusMap;
-            });
+                        // 抽出したステータス値をオブジェクトに格納（nullチェック付き）
+                        statusMap.power =
+                            currentPower && currentPower[1]
+                                ? currentPower[1]
+                                : "";
+                        statusMap.intelligence =
+                            currentIntelligence && currentIntelligence[1]
+                                ? currentIntelligence[1]
+                                : "";
+                        statusMap.faith =
+                            currentFaith && currentFaith[1]
+                                ? currentFaith[1]
+                                : "";
+                        statusMap.vitality =
+                            currentVitality && currentVitality[1]
+                                ? currentVitality[1]
+                                : "";
+                        statusMap.dexterity =
+                            currentDexterity && currentDexterity[1]
+                                ? currentDexterity[1]
+                                : "";
+                        statusMap.speed =
+                            currentSpeed && currentSpeed[1]
+                                ? currentSpeed[1]
+                                : "";
+                        statusMap.charm =
+                            currentCharm && currentCharm[1]
+                                ? currentCharm[1]
+                                : "";
+                        statusMap.luck =
+                            currentLuck && currentLuck[1] ? currentLuck[1] : "";
+                    }
+                    // characterStatusにオブジェクトを返す
+                    return statusMap;
+                });
+
+            if ("error" in characterStatus) {
+                res.status(404).json({
+                    error: "キャラクターIDを確認してください。",
+                });
+                return;
+            }
             // オブジェクトの中身をjsonデータでフロントエンドに渡す
             res.json(characterStatus);
         } catch (error) {
