@@ -20,7 +20,7 @@ const port = process.env.PORT || 3000;
 app.use(
     cors({
         // 開発環境URL。デプロイ時は本番環境URLへ更新。
-        origin: "http://localhost:5173",
+        origin: "http://lgqqi65169.rakkoserver.net/app/FFA_jobChange/",
     })
 );
 // リクエストのJSONを扱いやすいデータに変更
