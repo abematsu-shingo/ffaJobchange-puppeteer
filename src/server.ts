@@ -36,10 +36,22 @@ app.post(
     async (req: express.Request, res: express.Response) => {
         const { characterId } = req.body as { characterId: string }; // フロントエンドから送られてきたcharacterIdを取得
 
-        // IDが入力されていなかった場合
         if (!characterId) {
+            // IDが入力されていなかった場合
             res.status(400).json({
-                error: "キャラクターIDが指定されていません。",
+                error: "キャラクターIDを入力してください。",
+            });
+            return;
+        } else if (/^.*[^ -~｡-ﾟ].*$/.test(characterId)) {
+            // IDに全角が含まれていた場合
+            res.status(400).json({
+                error: "キャラクターIDは半角英数字で入力してください。",
+            });
+            return;
+        } else if (!/^[a-zA-Z0-9]{4,8}$/.test(characterId)) {
+            // IDが半角英数字かつ4文字〜8文字ではない場合
+            res.status(400).json({
+                error: "キャラクターIDは半角英数字4〜8文字で入力してください。",
             });
             return;
         }
