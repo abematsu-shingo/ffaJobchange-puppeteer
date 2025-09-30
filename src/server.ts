@@ -22,8 +22,8 @@ app.use(
         // 開発環境URL。デプロイ時は本番環境URLへ更新。
         origin: [
             "http://localhost:5173",
-            "http://essea-numero2.com/",
-            "https://essea-numero2.com/",
+            "http://essea-numero2.com",
+            "https://essea-numero2.com",
         ],
     })
 );
